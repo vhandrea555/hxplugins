@@ -3,6 +3,7 @@ import comtacti.plugins.Hook;
 import comtacti.plugins.Hookable;
 import comtacti.types.Option;
 import comtacti.types.Option;
+import comtacti.types.Option<T>;
 import utest.Assert;
 
 /**
@@ -22,10 +23,6 @@ class HookTests
 	public function setup()
 	{
 		tOne = new TestOne();
-		/*
-		Hook.addHook(TestOne, "testReturn", tReturn3, 100);
-		Hook.addHook(TestOne, "testReturn", tReturn1, 1000);
-		Hook.addHook(TestOne, "testReturn", tReturn2, -200);*/
 	}
 	
 	public function test_Void_Interception()
@@ -43,6 +40,14 @@ class HookTests
 		TestOne.test = false;
 		tOne.testVoid();
 		Assert.isTrue(TestOne.test);
+	}
+	
+	public function test_New()
+	{
+		Hook.addHook(TestOne, "new", tNew);
+		var n = new TestOne();
+		Assert.isTrue(n.newCalled);
+		Hook.removeHook(TestOne, "new", tNew);
 	}
 	
 	public function test_Static_Interception()
@@ -81,13 +86,19 @@ class HookTests
 		Assert.equals(12, tOne.testMap());
 	}
 	
+	private function tNew(me:TestOne)
+	{
+		me.newCalled = true;
+		return Some(null);
+	}
+	
 	private function tVoid(me:TestOne)
 	{
 		TestOne.test = false;
 		return Some(null);
 	}
 	
-	private function tStatic()
+	private function tStatic():Option<String>
 	{
 		return Some("Changed message");
 	}
@@ -139,10 +150,11 @@ class TestOne implements Hookable
 	public static var test = false;
 	
 	public var called:Bool;
+	public var newCalled:Bool;
 	
-	public function new()
+	@:hookable public function new()
 	{
-		
+		newCalled = false;
 	}
 	
 	@:hookable public static function testStatic():String
