@@ -1,0 +1,9 @@
+<project name="hxplugins" url="http://code.google.com/p/hxplugins/" license="BSD">
+    <user name="waneck"/>
+    <tag v="macro"/>
+    <tag v="utility"/>
+    <tag v="cross"/>
+    <tag v="plugins"/>
+    <description>hxplugins is a set of macro utilities to make it easy the creation of extendeable behaviors via plugins in haxe. In this</description>
+    <version name="0.0.1">In this version, only Hooks are implemented, but their api should remain stable.</version>
+</project>
