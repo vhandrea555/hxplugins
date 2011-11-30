@@ -51,34 +51,52 @@ class Hook
 			throw new Error("Class not found", hookClass.pos);
 		
 		var isStatic = false;
-		var meth = switch(Context.follow(cls))
+		var meth = 
 		{
-			case TInst(cl, params):
-				var cl = cl.get();
-				var found = null;
-				for (f in cl.fields.get())
+			var found = null;
+			var cls = cls;
+			while (found == null && cls != null)
+			{
+				switch(Context.follow(cls))
 				{
-					if (f.name == methodName)
-					{
-						found = f;
-						break;
-					}
-				}
-				if (found == null)
-				{
-					for (f in cl.statics.get())
-					{
-						if (f.name == methodName)
+					case TInst(cl, _):
+						var cl = cl.get();
+						
+						if (methodName == "new")
 						{
-							isStatic = true;
-							found = f;
-							break;
+							found = (cl.constructor == null) ? null : cl.constructor.get();
 						}
-					}
+						
+						for (f in cl.fields.get())
+						{
+							if (f.name == methodName)
+							{
+								found = f;
+								break;
+							}
+						}
+						if (found == null)
+						{
+							for (f in cl.statics.get())
+							{
+								if (f.name == methodName)
+								{
+									isStatic = true;
+									found = f;
+									break;
+								}
+							}
+						}
+						
+						cls = (cl.superClass != null) ? TInst(cl.superClass.t, null) : null;
+						
+					default: throw new Error("Hooks only work with classes", hookClass.pos);
 				}
 				
-				found;
-			default: throw new Error("Hooks only work with classes", hookClass.pos);
+				
+			}
+			
+			found;
 		};
 		
 		if (meth == null)

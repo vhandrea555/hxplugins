@@ -1,12 +1,12 @@
 package comtacti.plugins.internal;
-//#if macro
+#if macro
 import haxe.macro.Context;
 import haxe.macro.Expr;
 import macrotools.MacroTools;
 import macrotools.Map;
 import macrotools.Print;
 using Lambda;
-//#end
+#end
 
 /**
  * ...
@@ -139,6 +139,8 @@ class Build
 							case TPath(p): p.name == "Void" && p.pack.length == 0;
 							default: false;
 						} else false;
+						
+						if (field.name == "new") isVoid = true;
 						
 						var functionCall = "hook.func(" + args.join(",") + ")";
 						
