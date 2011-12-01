@@ -42,6 +42,20 @@ class Build
 		return {changed:changed, retExpr:ret};
 	}
 	
+	private static function getHookFilterExpr(hooksName:String, functionCall:String, pos:Position):Expr
+	{
+		return Context.parse('
+		{
+			var __hooks = ' + hooksName + ';
+			for (__hook in __hooks)
+			{
+				__last_ret = ' + functionCall + ';
+			}
+			
+			__last_ret;
+		}', pos);
+	}
+	
 	//then inspect into each of these functions, replacing Hook.getHookResults() with
 	/*
 	
@@ -64,9 +78,9 @@ class Build
 	{
 		return Context.parse('
 		{
-			var hooks = ' + hooksName + ';
+			var __hooks = ' + hooksName + ';
 			var __last_ret = None;
-			for (hook in hooks)
+			for (__hook in __hooks)
 			{
 				switch(__last_ret = ' + functionCall + ')
 				{
@@ -92,6 +106,7 @@ class Build
 		{
 			var isHook = false;
 			var isMap = false;
+			var isFilter = false;
 			
 			for (meta in field.meta)
 			{
@@ -99,6 +114,7 @@ class Build
 				{
 					case ":hookable": isHook = true;
 					case ":hookableMap": isMap = true;
+					case ":hookableFilter": isFilter = true;
 				}
 			}
 			
@@ -107,7 +123,7 @@ class Build
 			var expr = null;
 			var hooksVar = field.name + "__hooks__";
 			
-			if (isMap || isHook)
+			if (isMap || isHook || isFilter)
 			{
 				retFields.push(
 				{
@@ -124,7 +140,7 @@ class Build
 					case FFun(func):
 						var args = (field.access.has(AStatic)) ? [] : ["this"];
 						
-						if (isMap)
+						if (isMap || isFilter)
 						{
 							args.push("__last_ret");
 						}
@@ -142,22 +158,54 @@ class Build
 						
 						if (field.name == "new") isVoid = true;
 						
-						var functionCall = "hook.func(" + args.join(",") + ")";
+						var functionCall = "__hook.func(" + args.join(",") + ")";
 						
 						var actionForSome =
 							if (isMap) "" else "break;";
 						
-						var changeExprRet = changeExpr(func.expr, function(pos) return getHookCallExpr(hooksVar, actionForSome, functionCall, pos));
-						
-						var expr = if (!changeExprRet.changed)
+						if (!isFilter)
 						{
-							expr:EBlock([getHookCallExpr(hooksVar, (isVoid) ? "return;" : "return s;", functionCall, field.pos), changeExprRet.retExpr]),
-							pos:field.pos
+							var changeExprRet = changeExpr(func.expr, function(pos) return getHookCallExpr(hooksVar, actionForSome, functionCall, pos));
+						
+							var expr = if (!changeExprRet.changed)
+							{
+								expr:EBlock([getHookCallExpr(hooksVar, (isVoid) ? "return;" : "return s;", functionCall, field.pos), changeExprRet.retExpr]),
+								pos:field.pos
+							} else {
+								changeExprRet.retExpr;
+							}
+							
+							func.expr = expr;
 						} else {
-							changeExprRet.retExpr;
+							//var __last_ret = function() { func contents }();
+							//return {getHookFilterExpr(hooksVar, functionCall, pos)}
+							var pos = field.pos;
+							var block = [];
+							block.push( {
+								expr: EVars([ {
+									type:func.ret,
+									name:"__last_ret",
+									expr:
+									{
+										expr: ECall( 
+										{
+											expr:EFunction(null, { ret:func.ret, params:func.params, expr:func.expr, args:[] } ),
+											pos:pos
+										}, []),
+										pos:pos
+									}
+								}]),
+								pos:pos
+							});
+							
+							block.push( { 
+								expr:EReturn(getHookFilterExpr(hooksVar, functionCall, pos)),
+								pos:pos
+							} );
+							
+							func.expr = { expr:EBlock(block), pos:pos };
 						}
 						
-						func.expr = expr;
 						
 					default: throw new Error("A variable cannot be hookable. Only function can be hookable", field.pos);
 				}

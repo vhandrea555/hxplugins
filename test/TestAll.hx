@@ -1,4 +1,5 @@
 package ;
+import plugins.HookFilterTests;
 import plugins.HookTests;
 import utest.ui.Report;
 
@@ -15,6 +16,7 @@ class TestAll
 		var runner = new utest.Runner();
 
 		runner.addCase(new HookTests());
+		runner.addCase(new HookFilterTests());
 		
 		var report = Report.create(runner);
 		runner.run();
