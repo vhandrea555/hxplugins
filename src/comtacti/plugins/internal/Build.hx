@@ -23,7 +23,9 @@ class Build
 			switch(e.expr)
 			{
 				case ECall(ecall, params):
-					var path = MacroTools.getPath(ecall);
+					var path = MacroTools.getPath(ecall, false);
+					if (path == null)
+						return Map.mapExpr(map, e);
 					var p1 = path.pop();
 					var p2 = path.pop();
 					if (params.length == 0 && p2 == "Hook" && p1 == "getHookResults")
@@ -79,13 +81,13 @@ class Build
 		return Context.parse('
 		{
 			var __hooks = ' + hooksName + ';
-			var __last_ret = None;
+			var __last_ret = comtacti.types.Option.None;
 			for (__hook in __hooks)
 			{
 				switch(__last_ret = ' + functionCall + ')
 				{
-					case None:
-					case Some(s):' + actionForSome + '
+					case comtacti.types.Option.None:
+					case comtacti.types.Option.Some(s):' + actionForSome + '
 				}
 			}
 			
