@@ -5,5 +5,5 @@
     <tag v="cross"/>
     <tag v="plugins"/>
     <description>hxplugins is a set of macro utilities to make it easy the creation of extendeable behaviors via plugins in haxe. In this</description>
-    <version name="0.0.1">In this version, only Hooks are implemented, but their api should remain stable.</version>
+    <version name="0.0.2">Filters working correctly.</version>
 </project>
