@@ -103,7 +103,8 @@ class Hook
 			throw new Error("Method not found: " + methodName, method.pos);
 			
 		var isMap = meth.meta.has(":hookableMap");
-		if (! (meth.meta.has(":hookable") || isMap) )
+		var isFilter = meth.meta.has(":hookableFilter");
+		if (! (meth.meta.has(":hookable") || isMap || isFilter) )
 		 throw new Error("Method is not hookable: " + methodName, methodNameExpr.pos);
 		
 		//begin ensure that method follows signature needed
@@ -132,16 +133,19 @@ class Hook
 					}
 				}
 				
-				//add Option<> to the return type
-				ret = TPath( {
-					sub:null,
-					params:[TPType(ret)],
-					name:"Option",
-					pack:["comtacti", "types"]
-				});
+				if (!isFilter)
+				{
+					//add Option<> to the return type
+					ret = TPath( {
+						sub:null,
+						params:[TPType(ret)],
+						name:"Option",
+						pack:["comtacti", "types"]
+					});
+				}
 				
 				//add acc as first argument
-				if (isMap)
+				if (isMap || isFilter)
 				{
 					args.unshift(ret);
 				}
